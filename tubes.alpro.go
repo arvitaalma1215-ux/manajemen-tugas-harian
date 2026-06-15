@@ -21,13 +21,14 @@ type Tugas struct {
 type KumpulanDataTugas [KAPASITAS_MAKSIMAL_TUGAS]Tugas
 
 var daftarTugasUtama KumpulanDataTugas
-var running bool = true 
 
 func main() {
 	var pilihanMenu int
+	var masihBerjalan bool
 	pembacaInput := bufio.NewReader(os.Stdin)
 
-	for running {
+	masihBerjalan = true
+	for masihBerjalan {
 		fmt.Println("\n=== APLIKASI MANAJEMEN TUGAS HARIAN (KHUSUS JUNI 2026) ===")
 		fmt.Println("1. Tambah Tugas")
 		fmt.Println("2. Cari Tugas")
@@ -41,52 +42,57 @@ func main() {
 
 		fmt.Scanf("%d\n", &pilihanMenu)
 
-		switch pilihanMenu {
-		case 1:
+		if pilihanMenu == 1 {
 			tambahTugas(pembacaInput)
-		case 2:
+		} else if pilihanMenu == 2 {
 			cariTugas()
-		case 3:
+		} else if pilihanMenu == 3 {
 			ubahTugas(pembacaInput)
-		case 4:
+		} else if pilihanMenu == 4 {
 			hapusTugas()
-		case 5:
+		} else if pilihanMenu == 5 {
 			urutkanTugas()
-		case 6:
+		} else if pilihanMenu == 6 {
 			ubahStatusTugas()
-		case 7:
+		} else if pilihanMenu == 7 {
 			tampilkanSemuaTugas()
-		case 0:
+		} else if pilihanMenu == 0 {
 			fmt.Println("Terima kasih! Tetap semangat menyelesaikan tugasmu.")
-			running = false 
-		default:
+			masihBerjalan = false // variabel lokal, bukan global
+		} else {
 			fmt.Println("Pilihan tidak valid. Silakan coba lagi!")
 		}
 	}
 }
 
 func hitungJumlahTugas() int {
-	jumlahTugasTersimpan := 0
-	for indeks := 0; indeks < KAPASITAS_MAKSIMAL_TUGAS; indeks++ {
+	var jumlahTugasTersimpan int
+	var indeks int
+
+	jumlahTugasTersimpan = 0
+	indeks = 0
+	for indeks < KAPASITAS_MAKSIMAL_TUGAS {
 		if daftarTugasUtama[indeks].MataKuliah != "" {
 			jumlahTugasTersimpan++
 		}
+		indeks++
 	}
 	return jumlahTugasTersimpan
 }
 
 func validasiTanggal(tanggalInput string) bool {
+	var tahun, bulan, hari int
+
 	if len(tanggalInput) != 10 || tanggalInput[4] != '-' || tanggalInput[7] != '-' {
 		return false
 	}
 
-	var tahun, bulan, hari int
 	if _, err := fmt.Sscanf(tanggalInput, "%4d-%2d-%2d", &tahun, &bulan, &hari); err != nil {
 		return false
 	}
 
 	if tahun != 2026 || bulan != 6 {
-		fmt.Println("⚠️ Batasan: Aplikasi ini hanya menerima input untuk bulan Juni 2026!")
+		fmt.Println("Batasan: Aplikasi ini hanya menerima input untuk bulan Juni 2026!")
 		return false
 	}
 
@@ -98,11 +104,12 @@ func validasiTanggal(tanggalInput string) bool {
 }
 
 func validasiJam(jamInput string) bool {
+	var jam, menit int
+
 	if len(jamInput) != 5 || jamInput[2] != ':' {
 		return false
 	}
 
-	var jam, menit int
 	fmt.Sscanf(jamInput, "%2d:%2d", &jam, &menit)
 	if jam < 0 || jam > 23 || menit < 0 || menit > 59 {
 		return false
@@ -112,8 +119,8 @@ func validasiJam(jamInput string) bool {
 
 func hitungSisaHari(tanggalDeadline string) int {
 	var tahun, bulan, hari int
-	fmt.Sscanf(tanggalDeadline, "%4d-%2d-%2d", &tahun, &bulan, &hari)
 
+	fmt.Sscanf(tanggalDeadline, "%4d-%2d-%2d", &tahun, &bulan, &hari)
 	waktuSekarang := time.Now()
 	tanggalHariIni := waktuSekarang.Day()
 
@@ -121,39 +128,45 @@ func hitungSisaHari(tanggalDeadline string) int {
 }
 
 func berikanFeedback(tugasBaru Tugas) {
+	var sisaHari int
+
 	fmt.Println("\nData berhasil diproses!")
-	sisaHari := hitungSisaHari(tugasBaru.Deadline)
+	sisaHari = hitungSisaHari(tugasBaru.Deadline)
 
 	if sisaHari < 0 {
-		fmt.Println("⚠️ Peringatan: Deadline tugas ini sudah lewat di bulan ini!")
+		fmt.Println("Peringatan: Deadline tugas ini sudah lewat di bulan ini!")
 	} else if sisaHari <= 2 {
-		fmt.Printf("⚠️ Bahaya: Tugas %s mendekati deadline (%d hari lagi)! Prioritaskan tugas ini.\n", tugasBaru.MataKuliah, sisaHari)
+		fmt.Printf("Bahaya: Tugas %s mendekati deadline (%d hari lagi)! Prioritaskan tugas ini.\n", tugasBaru.MataKuliah, sisaHari)
 	} else {
-		fmt.Printf("💬 Info: Waktu pengerjaan masih aman (%d hari lagi). Cicil sedikit demi sedikit!\n", sisaHari)
+		fmt.Printf("Info: Waktu pengerjaan masih aman (%d hari lagi). Cicil sedikit demi sedikit!\n", sisaHari)
 	}
 
 	if strings.EqualFold(tugasBaru.Kategori, "Tubes") || strings.EqualFold(tugasBaru.Kategori, "UAS") {
-		fmt.Println("💡 Rekomendasi: Kategori 'Tubes/UAS' membutuhkan fokus tinggi. Jangan ditunda sampai malam terakhir!")
+		fmt.Println("Rekomendasi: Kategori Tubes/UAS membutuhkan fokus tinggi. Jangan ditunda sampai malam terakhir!")
 	}
 }
 
 func tambahTugas(pembacaInput *bufio.Reader) {
-	jumlahTugasSaatIni := hitungJumlahTugas()
+	var jumlahTugasSaatIni int
+	var mataKuliahInput, kategoriInput string
+	var tanggalDeadlineInput, jamPengumpulanInput string
+	var apakahTanggalValid, apakahJamValid bool
+
+	jumlahTugasSaatIni = hitungJumlahTugas()
 	if jumlahTugasSaatIni >= KAPASITAS_MAKSIMAL_TUGAS {
 		fmt.Println("Daftar tugas sudah penuh.")
 		return
 	}
 
 	fmt.Print("Masukkan Mata Kuliah: ")
-	mataKuliahInput, _ := pembacaInput.ReadString('\n')
+	mataKuliahInput, _ = pembacaInput.ReadString('\n')
 	mataKuliahInput = strings.TrimSpace(mataKuliahInput)
 
 	fmt.Print("Masukkan Kategori (Tubes/UAS/Kuis/Lainnya): ")
-	kategoriInput, _ := pembacaInput.ReadString('\n')
+	kategoriInput, _ = pembacaInput.ReadString('\n')
 	kategoriInput = strings.TrimSpace(kategoriInput)
 
-	var tanggalDeadlineInput string
-	apakahTanggalValid := false
+	apakahTanggalValid = false
 	for !apakahTanggalValid {
 		fmt.Print("Masukkan Deadline (YYYY-MM-DD): ")
 		fmt.Scanf("%s\n", &tanggalDeadlineInput)
@@ -164,8 +177,7 @@ func tambahTugas(pembacaInput *bufio.Reader) {
 		}
 	}
 
-	var jamPengumpulanInput string
-	apakahJamValid := false
+	apakahJamValid = false
 	for !apakahJamValid {
 		fmt.Print("Masukkan Jam Pengumpulan (HH:MM): ")
 		fmt.Scanf("%s\n", &jamPengumpulanInput)
@@ -188,35 +200,44 @@ func tambahTugas(pembacaInput *bufio.Reader) {
 }
 
 func cetakSatuTugas(tugasYgDicetak Tugas, nomorUrut int) {
-	statusString := "Belum Selesai"
+	var statusString string
+
+	statusString = "Belum Selesai"
 	if tugasYgDicetak.Status {
 		statusString = "Selesai"
 	}
 	fmt.Printf("%d. [%s] %s | Deadline: %s Pukul %s | Status: %s\n",
-		nomorUrut+1, tugasYgDicetak.Kategori, tugasYgDicetak.MataKuliah, tugasYgDicetak.Deadline, tugasYgDicetak.Jam, statusString)
+		nomorUrut+1, tugasYgDicetak.Kategori, tugasYgDicetak.MataKuliah,
+		tugasYgDicetak.Deadline, tugasYgDicetak.Jam, statusString)
 }
 
+// tampilkanSemuaTugas mencetak seluruh data tugas yang tersimpan
 func tampilkanSemuaTugas() {
-	totalTugas := hitungJumlahTugas()
+	var totalTugas, indeks int
+
+	totalTugas = hitungJumlahTugas()
 	if totalTugas == 0 {
 		fmt.Println("Belum ada data tugas.")
 		return
 	}
 
 	fmt.Println("\n=== DAFTAR SEMUA TUGAS ===")
-	for indeks := 0; indeks < totalTugas; indeks++ {
+	indeks = 0
+	for indeks < totalTugas {
 		cetakSatuTugas(daftarTugasUtama[indeks], indeks)
+		indeks++
 	}
 }
 
 func cariTugas() {
-	totalTugas := hitungJumlahTugas()
+	var totalTugas, pilihanMetodeCari int
+
+	totalTugas = hitungJumlahTugas()
 	if totalTugas == 0 {
 		fmt.Println("Belum ada data tugas.")
 		return
 	}
 
-	var pilihanMetodeCari int
 	fmt.Println("\nCari Berdasarkan:")
 	fmt.Println("1. Kategori (Sequential Search)")
 	fmt.Println("2. Deadline (Binary Search)")
@@ -225,77 +246,108 @@ func cariTugas() {
 	fmt.Scanf("%d\n", &pilihanMetodeCari)
 
 	if pilihanMetodeCari == 1 {
-		var kategoriDicari string
-		fmt.Print("Masukkan kategori yang dicari: ")
-		fmt.Scanf("%s\n", &kategoriDicari)
-		apakahDitemukan := false
-
-		for indeks := 0; indeks < totalTugas; indeks++ {
-			if strings.EqualFold(daftarTugasUtama[indeks].Kategori, kategoriDicari) {
-				cetakSatuTugas(daftarTugasUtama[indeks], indeks)
-				apakahDitemukan = true
-			}
-		}
-		if !apakahDitemukan {
-			fmt.Println("Data tugas dengan kategori tersebut tidak ditemukan.")
-		}
-
+		cariByKategoriSequential(totalTugas)
 	} else if pilihanMetodeCari == 2 {
-		selectionSortTugas(true) 
-		var tanggalDicari string
-		fmt.Print("Masukkan tanggal deadline yang dicari (YYYY-MM-DD): ")
-		fmt.Scanf("%s\n", &tanggalDicari)
-
-		posisiKiri := 0
-		posisiKanan := totalTugas - 1
-		indeksHasilTemuan := -1
-
-		for posisiKiri <= posisiKanan && indeksHasilTemuan == -1 {
-			titikTengah := (posisiKiri + posisiKanan) / 2
-			if daftarTugasUtama[titikTengah].Deadline == tanggalDicari {
-				indeksHasilTemuan = titikTengah
-			} else if daftarTugasUtama[titikTengah].Deadline < tanggalDicari {
-				posisiKiri = titikTengah + 1
-			} else {
-				posisiKanan = titikTengah - 1
-			}
-		}
-
-		if indeksHasilTemuan != -1 {
-			fmt.Println("\nData ditemukan:")
-			for indeks := 0; indeks < totalTugas; indeks++ {
-				if daftarTugasUtama[indeks].Deadline == tanggalDicari {
-					cetakSatuTugas(daftarTugasUtama[indeks], indeks)
-				}
-			}
-		} else {
-			fmt.Println("Data dengan deadline tersebut tidak ditemukan.")
-		}
-
+		cariByDeadlineBinary(totalTugas)
 	} else if pilihanMetodeCari == 3 {
-		var tanggalDicari, jamDicari string
-		fmt.Print("Masukkan Tanggal (YYYY-MM-DD): ")
-		fmt.Scanf("%s\n", &tanggalDicari)
-		fmt.Print("Masukkan Jam (HH:MM): ")
-		fmt.Scanf("%s\n", &jamDicari)
-
-		apakahDitemukan := false
-		for indeks := 0; indeks < totalTugas; indeks++ {
-			if daftarTugasUtama[indeks].Deadline == tanggalDicari && daftarTugasUtama[indeks].Jam == jamDicari {
-				cetakSatuTugas(daftarTugasUtama[indeks], indeks)
-				apakahDitemukan = true
-			}
-		}
-		if !apakahDitemukan {
-			fmt.Println("Data dengan kombinasi tanggal & jam tersebut tidak ditemukan.")
-		}
+		cariByTanggalJamSequential(totalTugas)
 	} else {
 		fmt.Println("Pilihan pencarian tidak valid.")
 	}
 }
 
+func cariByKategoriSequential(totalTugas int) {
+	var kategoriDicari string
+	var apakahDitemukan bool
+	var indeks int
+
+	fmt.Print("Masukkan kategori yang dicari: ")
+	fmt.Scanf("%s\n", &kategoriDicari)
+
+	apakahDitemukan = false
+	indeks = 0
+	for indeks < totalTugas {
+		if strings.EqualFold(daftarTugasUtama[indeks].Kategori, kategoriDicari) {
+			cetakSatuTugas(daftarTugasUtama[indeks], indeks)
+			apakahDitemukan = true
+		}
+		indeks++
+	}
+
+	if !apakahDitemukan {
+		fmt.Println("Data tugas dengan kategori tersebut tidak ditemukan.")
+	}
+}
+
+func cariByDeadlineBinary(totalTugas int) {
+	var tanggalDicari string
+	var posisiKiri, posisiKanan, titikTengah, indeksHasilTemuan int
+	var indeks int
+
+	selectionSortTugas(true) 
+	fmt.Print("Masukkan tanggal deadline yang dicari (YYYY-MM-DD): ")
+	fmt.Scanf("%s\n", &tanggalDicari)
+
+	posisiKiri = 0
+	posisiKanan = totalTugas - 1
+	indeksHasilTemuan = -1
+
+	for posisiKiri <= posisiKanan && indeksHasilTemuan == -1 {
+		titikTengah = (posisiKiri + posisiKanan) / 2
+		if daftarTugasUtama[titikTengah].Deadline == tanggalDicari {
+			indeksHasilTemuan = titikTengah
+		} else if daftarTugasUtama[titikTengah].Deadline < tanggalDicari {
+			posisiKiri = titikTengah + 1
+		} else {
+			posisiKanan = titikTengah - 1
+		}
+	}
+
+	if indeksHasilTemuan != -1 {
+		fmt.Println("\nData ditemukan:")
+		indeks = 0
+		for indeks < totalTugas {
+			if daftarTugasUtama[indeks].Deadline == tanggalDicari {
+				cetakSatuTugas(daftarTugasUtama[indeks], indeks)
+			}
+			indeks++
+		}
+	} else {
+		fmt.Println("Data dengan deadline tersebut tidak ditemukan.")
+	}
+}
+
+func cariByTanggalJamSequential(totalTugas int) {
+	var tanggalDicari, jamDicari string
+	var apakahDitemukan bool
+	var indeks int
+
+	fmt.Print("Masukkan Tanggal (YYYY-MM-DD): ")
+	fmt.Scanf("%s\n", &tanggalDicari)
+	fmt.Print("Masukkan Jam (HH:MM): ")
+	fmt.Scanf("%s\n", &jamDicari)
+
+	apakahDitemukan = false
+	indeks = 0
+	for indeks < totalTugas {
+		if daftarTugasUtama[indeks].Deadline == tanggalDicari && daftarTugasUtama[indeks].Jam == jamDicari {
+			cetakSatuTugas(daftarTugasUtama[indeks], indeks)
+			apakahDitemukan = true
+		}
+		indeks++
+	}
+
+	if !apakahDitemukan {
+		fmt.Println("Data dengan kombinasi tanggal & jam tersebut tidak ditemukan.")
+	}
+}
+
 func ubahTugas(pembacaInput *bufio.Reader) {
-	totalTugas := hitungJumlahTugas()
+	var totalTugas, nomorTugasPilihan, indeksPilihan int
+	var mataKuliahBaru, kategoriBaru string
+	var tanggalDeadlineBaru, jamPengumpulanBaru string
+
+	totalTugas = hitungJumlahTugas()
 	if totalTugas == 0 {
 		fmt.Println("Tidak ada tugas yang bisa diubah.")
 		return
@@ -303,10 +355,9 @@ func ubahTugas(pembacaInput *bufio.Reader) {
 
 	tampilkanSemuaTugas()
 
-	var nomorTugasPilihan int
 	fmt.Print("Masukkan nomor tugas yang ingin diubah: ")
 	fmt.Scanf("%d\n", &nomorTugasPilihan)
-	indeksPilihan := nomorTugasPilihan - 1
+	indeksPilihan = nomorTugasPilihan - 1
 
 	if indeksPilihan < 0 || indeksPilihan >= totalTugas {
 		fmt.Println("Nomor tidak valid.")
@@ -314,14 +365,13 @@ func ubahTugas(pembacaInput *bufio.Reader) {
 	}
 
 	fmt.Print("Masukkan Mata Kuliah baru: ")
-	mataKuliahBaru, _ := pembacaInput.ReadString('\n')
+	mataKuliahBaru, _ = pembacaInput.ReadString('\n')
 	mataKuliahBaru = strings.TrimSpace(mataKuliahBaru)
 
 	fmt.Print("Masukkan Kategori baru: ")
-	kategoriBaru, _ := pembacaInput.ReadString('\n')
+	kategoriBaru, _ = pembacaInput.ReadString('\n')
 	kategoriBaru = strings.TrimSpace(kategoriBaru)
 
-	var tanggalDeadlineBaru, jamPengumpulanBaru string
 	fmt.Print("Masukkan Deadline baru (YYYY-MM-DD): ")
 	fmt.Scanf("%s\n", &tanggalDeadlineBaru)
 	fmt.Print("Masukkan Jam Pengumpulan baru (HH:MM): ")
@@ -339,7 +389,10 @@ func ubahTugas(pembacaInput *bufio.Reader) {
 }
 
 func hapusTugas() {
-	totalTugas := hitungJumlahTugas()
+	var totalTugas, nomorTugasPilihan, indeksPilihan, indeks int
+	var teksKonfirmasi string
+
+	totalTugas = hitungJumlahTugas()
 	if totalTugas == 0 {
 		fmt.Println("Tidak ada tugas untuk dihapus.")
 		return
@@ -347,23 +400,23 @@ func hapusTugas() {
 
 	tampilkanSemuaTugas()
 
-	var nomorTugasPilihan int
 	fmt.Print("Masukkan nomor tugas yang ingin dihapus: ")
 	fmt.Scanf("%d\n", &nomorTugasPilihan)
-	indeksPilihan := nomorTugasPilihan - 1
+	indeksPilihan = nomorTugasPilihan - 1
 
 	if indeksPilihan < 0 || indeksPilihan >= totalTugas {
 		fmt.Println("Nomor tidak valid.")
 		return
 	}
 
-	var teksKonfirmasi string
 	fmt.Printf("Apakah Anda yakin menghapus tugas %s? (y/n): ", daftarTugasUtama[indeksPilihan].MataKuliah)
 	fmt.Scanf("%s\n", &teksKonfirmasi)
 
 	if teksKonfirmasi == "y" || teksKonfirmasi == "Y" {
-		for indeks := indeksPilihan; indeks < totalTugas-1; indeks++ {
+		indeks = indeksPilihan
+		for indeks < totalTugas-1 {
 			daftarTugasUtama[indeks] = daftarTugasUtama[indeks+1]
+			indeks++
 		}
 		daftarTugasUtama[totalTugas-1] = Tugas{}
 		fmt.Println("Tugas berhasil dihapus.")
@@ -373,13 +426,14 @@ func hapusTugas() {
 }
 
 func urutkanTugas() {
-	totalTugas := hitungJumlahTugas()
+	var totalTugas, pilihanMetode, pilihanKriteria int
+
+	totalTugas = hitungJumlahTugas()
 	if totalTugas == 0 {
 		fmt.Println("Tidak ada data untuk diurutkan.")
 		return
 	}
 
-	var pilihanMetode, pilihanKriteria int
 	fmt.Println("\nPilih Metode Pengurutan:")
 	fmt.Println("1. Selection Sort (Berdasarkan Deadline)")
 	fmt.Println("2. Insertion Sort (Berdasarkan Status)")
@@ -411,10 +465,14 @@ func urutkanTugas() {
 }
 
 func selectionSortTugas(apakahAscending bool) {
-	totalTugas := hitungJumlahTugas()
-	for indeksLuar := 0; indeksLuar < totalTugas-1; indeksLuar++ {
-		indeksTerpilih := indeksLuar
-		for indeksDalam := indeksLuar + 1; indeksDalam < totalTugas; indeksDalam++ {
+	var totalTugas, indeksLuar, indeksDalam, indeksTerpilih int
+
+	totalTugas = hitungJumlahTugas()
+	indeksLuar = 0
+	for indeksLuar < totalTugas-1 {
+		indeksTerpilih = indeksLuar
+		indeksDalam = indeksLuar + 1
+		for indeksDalam < totalTugas {
 			if apakahAscending {
 				if daftarTugasUtama[indeksDalam].Deadline < daftarTugasUtama[indeksTerpilih].Deadline {
 					indeksTerpilih = indeksDalam
@@ -424,22 +482,26 @@ func selectionSortTugas(apakahAscending bool) {
 					indeksTerpilih = indeksDalam
 				}
 			}
+			indeksDalam++
 		}
-
 		daftarTugasUtama[indeksLuar], daftarTugasUtama[indeksTerpilih] = daftarTugasUtama[indeksTerpilih], daftarTugasUtama[indeksLuar]
+		indeksLuar++
 	}
 }
 
 func insertionSortTugas(apakahAscending bool) {
-	totalTugas := hitungJumlahTugas()
-	for indeksLuar := 1; indeksLuar < totalTugas; indeksLuar++ {
-		dataPenyimpanSementara := daftarTugasUtama[indeksLuar]
-		indeksDalam := indeksLuar - 1
+	var totalTugas, indeksLuar, indeksDalam int
+	var dataPenyimpanSementara Tugas
+	var nilaiBobotIndeksDalam, nilaiBobotSementara int
+	var apakahMemenuhiKondisiTukar, loopTerus bool
 
-		nilaiBobotIndeksDalam := 0
-		nilaiBobotSementara := 0
+	totalTugas = hitungJumlahTugas()
+	indeksLuar = 1
+	for indeksLuar < totalTugas {
+		dataPenyimpanSementara = daftarTugasUtama[indeksLuar]
+		indeksDalam = indeksLuar - 1
 
-		loopTerus := indeksDalam >= 0
+		loopTerus = indeksDalam >= 0
 		for loopTerus {
 			if daftarTugasUtama[indeksDalam].Status {
 				nilaiBobotIndeksDalam = 1
@@ -452,7 +514,7 @@ func insertionSortTugas(apakahAscending bool) {
 				nilaiBobotSementara = 0
 			}
 
-			apakahMemenuhiKondisiTukar := false
+			apakahMemenuhiKondisiTukar = false
 			if apakahAscending {
 				apakahMemenuhiKondisiTukar = nilaiBobotIndeksDalam > nilaiBobotSementara
 			} else {
@@ -464,15 +526,18 @@ func insertionSortTugas(apakahAscending bool) {
 				indeksDalam--
 				loopTerus = indeksDalam >= 0
 			} else {
-				loopTerus = false 
+				loopTerus = false
 			}
 		}
 		daftarTugasUtama[indeksDalam+1] = dataPenyimpanSementara
+		indeksLuar++
 	}
 }
 
 func ubahStatusTugas() {
-	totalTugas := hitungJumlahTugas()
+	var totalTugas, nomorTugasPilihan, indeksPilihan, pilihanStatus int
+
+	totalTugas = hitungJumlahTugas()
 	if totalTugas == 0 {
 		fmt.Println("Belum ada data tugas.")
 		return
@@ -480,10 +545,9 @@ func ubahStatusTugas() {
 
 	tampilkanSemuaTugas()
 
-	var nomorTugasPilihan, pilihanStatus int
 	fmt.Print("Masukkan nomor tugas yang ingin diubah statusnya: ")
 	fmt.Scanf("%d\n", &nomorTugasPilihan)
-	indeksPilihan := nomorTugasPilihan - 1
+	indeksPilihan = nomorTugasPilihan - 1
 
 	if indeksPilihan < 0 || indeksPilihan >= totalTugas {
 		fmt.Println("Nomor tidak valid.")
@@ -498,7 +562,7 @@ func ubahStatusTugas() {
 
 	if pilihanStatus == 1 {
 		daftarTugasUtama[indeksPilihan].Status = true
-		fmt.Println("🎉 Mantap! Tugas telah ditandai SELESAI.")
+		fmt.Println("Mantap! Tugas telah ditandai SELESAI.")
 	} else if pilihanStatus == 2 {
 		daftarTugasUtama[indeksPilihan].Status = false
 		fmt.Println("Status diatur kembali ke BELUM SELESAI.")
