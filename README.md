@@ -46,3 +46,7 @@ Aplikasi ini adalah program berbasis bahasa pemrograman **Go** yang dirancang un
    cd manajemen-tugas-harian
 3. ```bash
    go run main.go
+
+## ANGGOTA KELOMPOK 17 
+1. Arvita ALma Walid Tanaya (103032500019)
+2. Novita Syahra Amalia Rumalean (103032500139)
